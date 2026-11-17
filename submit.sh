@@ -17,7 +17,8 @@ fi
 
 JOB_NAME="$1"
 
-BASEDIR="$(cd "$(dirname "$0")" && pwd)"
+FRAMEWORK_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$FRAMEWORK_DIR"
 
 #
 # Verify required structure
@@ -25,52 +26,29 @@ BASEDIR="$(cd "$(dirname "$0")" && pwd)"
 
 for dir in config r_scripts slurm
 do
-    if [ ! -d "${BASEDIR}/${dir}" ]; then
+    if [ ! -d "${FRAMEWORK_DIR}/${dir}" ]; then
         echo "ERROR: Missing directory:"
-        echo "  ${BASEDIR}/${dir}"
+        echo "  ${FRAMEWORK_DIR}/${dir}"
         exit 1
     fi
 done
 
 for file in \
-    config/jobs.csv \
-    config/resource_tiers.csv \
-    config/shared_resources.csv \
-    config/root_paths.csv \
+    config/config.yml \
     slurm/job_template.sh \
     r_scripts/create_batch_job.R \
+    r_scripts/create_submission_plan.R \
     r_scripts/submit_job.R
 do
-    if [ ! -f "${BASEDIR}/${file}" ]; then
+    if [ ! -f "${FRAMEWORK_DIR}/${file}" ]; then
         echo "ERROR: Missing file:"
-        echo "  ${BASEDIR}/${file}"
+        echo "  ${FRAMEWORK_DIR}/${file}"
         exit 1
     fi
 done
 
-#
-# Verify job exists
-#
-
-if ! awk -F',' -v job="$JOB_NAME" '
-NR > 1 && $1 == job { found=1 }
-END { exit !found }
-' "${BASEDIR}/config/jobs.csv"
-then
-    echo "ERROR: Unknown job '${JOB_NAME}'"
-    echo
-    echo "Available jobs:"
-    awk -F',' 'NR>1 {print "  - " $1}' \
-        "${BASEDIR}/config/jobs.csv"
-    exit 1
-fi
-
-
 PLAN_FILE=$(
-    Rscript \
-        "${BASEDIR}/r_scripts/submit_job.R" \
-        "${JOB_NAME}" \
-        "${BASEDIR}"
+    Rscript r_scripts/submit_job.R "$JOB_NAME"
 )
 
 if [ ! -f "${PLAN_FILE}" ]; then
