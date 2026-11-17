@@ -58,4 +58,10 @@ print(resolved_job)
 list2env(resolved_job, envir = .GlobalEnv)
 
 
+# SOURCE JOB SCRIPT -------------------------------------------------------
+
+
+source(resolved_job$runner_script)
+
+
 
