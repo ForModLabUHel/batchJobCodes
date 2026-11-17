@@ -18,10 +18,10 @@ set -euo pipefail
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 export JOB_NAME="{{JOB_NAME}}"
-export BATCH_JOBS_DIR="{{BASEDIR}}"
+export BATCH_FRAMEWORK_DIR="{{FRAMEWORK_DIR}}"
 
 module load r-env/452
 
 cd "{{PROJECT_ROOT}}"
 
-srun Rscript --no-save $BATCH_JOBS_DIR/r_scripts/runner.R
+srun Rscript --no-save $BATCH_FRAMEWORK_DIR/r_scripts/runner.R
