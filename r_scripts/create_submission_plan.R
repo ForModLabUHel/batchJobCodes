@@ -1,7 +1,8 @@
 create_submission_plan <- function(
     job_name,
     generated_dir,
-    config_file
+    config_file,
+    framework_dir
 ) {
   cfg <- load_job_config(config_file)
   
@@ -11,47 +12,34 @@ create_submission_plan <- function(
     job_name
   )
   
-  n_sets <- job$n_sets
-  n_chains <- job$n_chains
+  n_sets <- set_job_nParam(job$n_sets)
+  n_chains <- set_job_nParam(job$n_chains)
   
-  if(
-    is.null(n_sets) ||
-    is.na(n_sets)   ||
-    n_sets <= 1
-  ) {
-    create_simple_plan(
-      job_name,
-      generated_dir,
-      config_file
-    )
-  } else {
-    create_chain_plan(
-      job_name,
-      n_sets,
-      n_chains,
-      generated_dir = generated_dir,
-      config_file = config_file
-    )
-  }
-}
-
-create_simple_plan <- function(...) {
-  job_file <- create_batch_job(
-    job_name = job_name,
+  create_chain_plan(
+    job_name,
+    n_sets,
+    n_chains,
     generated_dir = generated_dir,
     config_file = config_file,
-    extra_values = list(array_spec = "1-1")
-  )
-  
-  data.frame(
-    job_key = job_name,
-    job_file = normalizePath(job_file),
-    depends_on = "",
-    stringsAsFactors = FALSE
+    framework_dir
   )
 }
 
-create_chain_plan <- function(...) {
+set_job_nParam <- function(n_param) {
+  if(is.null(n_param) ||
+     is.na(n_param)   ||
+     n_param <= 1) {
+     n_param <- 1
+  }
+  n_param
+}
+
+create_chain_plan <- function(job_name,
+                              n_sets,
+                              n_chains,
+                              generated_dir = generated_dir,
+                              config_file = config_file,
+                              framework_dir) {
   rows <- vector(
     "list",
     n_sets
@@ -70,6 +58,7 @@ create_chain_plan <- function(...) {
       generated_dir = generated_dir,
       config_file = config_file,
       extra_values = list(
+        framework_dir = framework_dir,
         set_id = set_id,
         array_spec = paste0(
           "1-",
