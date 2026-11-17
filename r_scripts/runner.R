@@ -3,6 +3,7 @@
 
 job_name <- Sys.getenv("JOB_NAME")
 framework_dir <- Sys.getenv("BATCH_FRAMEWORK_DIR")
+setID <- Sys.getenv("SET_ID")
 
 if (!nzchar(framework_dir)) {
   stop("BATCH_FRAMEWORK_DIR is not set")
@@ -55,13 +56,16 @@ print(resolved_job)
 # LOAD JOB VARS INTO ENV --------------------------------------------------
 
 
-list2env(resolved_job, envir = .GlobalEnv)
+job_env <- list2env(
+  resolved_job,
+  envir = new.env(parent = globalenv())
+)
 
 
 # SOURCE JOB SCRIPT -------------------------------------------------------
 
 
-source(resolved_job$runner_script)
+source(resolved_job$runner_script, local = job_env)
 
 
 
