@@ -182,22 +182,6 @@ build_replacements <- function(
 # Note: This is not necessarily the root dir of the project.
 # Writes the batch script and sets permissions to "755". 
 # Returns the batch script path.
-
-# The structure of basedir should be the following:
-# submit.sh: The bash script to submit a job.
-# config: The files containing the parameters.
-# - config/jobs.csv
-# - config/resource_tiers.csv
-# - config/shared_resources.csv
-# - config/root_paths.csv
-# slurm: The template script.
-# - slurm/job_template.sh
-# r_scripts: The required R scripts.
-# - r_scripts/create_batch_job.R
-# - r_scripts/submit_job.R
-# generated: The generated batch job script.
-# - eg. generated/denmark_fagus.sh
-
 create_batch_job <- function(
     job_name,
     generated_dir,
