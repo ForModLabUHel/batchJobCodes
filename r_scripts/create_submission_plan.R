@@ -1,8 +1,9 @@
 create_submission_plan <- function(
     job_name,
-    basedir
+    generated_dir,
+    config_file
 ) {
-  cfg <- load_job_config(basedir)
+  cfg <- load_job_config(config_file)
   
   job <- get_row(
     cfg$jobs,
@@ -14,30 +15,31 @@ create_submission_plan <- function(
   n_chains <- job$n_chains
   
   if(
-    is.na(n_sets) ||
+    is.null(n_sets) ||
+    is.na(n_sets)   ||
     n_sets <= 1
   ) {
     create_simple_plan(
       job_name,
-      basedir
+      generated_dir,
+      config_file
     )
   } else {
     create_chain_plan(
       job_name,
       n_sets,
       n_chains,
-      basedir
+      generated_dir = generated_dir,
+      config_file = config_file
     )
   }
 }
 
-create_simple_plan <- function(
-    job_name,
-    basedir
-) {
+create_simple_plan <- function(...) {
   job_file <- create_batch_job(
     job_name = job_name,
-    basedir = basedir,
+    generated_dir = generated_dir,
+    config_file = config_file,
     extra_values = list(array_spec = "1-1")
   )
   
@@ -49,12 +51,7 @@ create_simple_plan <- function(
   )
 }
 
-create_chain_plan <- function(
-    job_name,
-    n_sets,
-    n_chains,
-    basedir
-) {
+create_chain_plan <- function(...) {
   rows <- vector(
     "list",
     n_sets
@@ -70,7 +67,8 @@ create_chain_plan <- function(
     
     job_file <- create_batch_job(
       job_name = job_name,
-      basedir = basedir,
+      generated_dir = generated_dir,
+      config_file = config_file,
       extra_values = list(
         set_id = set_id,
         array_spec = paste0(

@@ -60,38 +60,31 @@ resolve_job_paths <- function(job, roots) {
   job
 }
 
-# Load all csv config files and return in list
-load_job_config <- function(basedir) {
+# Yaml config
+load_job_config <- function(config_file) {
+  
+  raw <- yaml::read_yaml(config_file)
   
   list(
-    jobs = read.csv(
-      file.path(basedir, "config", "jobs.csv"),
+    jobs = as.data.frame(
+      raw$jobs,
       stringsAsFactors = FALSE
     ),
     
-    tiers = read.csv(
-      file.path(
-        basedir,
-        "config",
-        "resource_tiers.csv"
-      ),
+    tiers = as.data.frame(
+      raw$resource_tiers,
       stringsAsFactors = FALSE
     ),
     
-    shared = read.csv(
-      file.path(
-        basedir,
-        "config",
-        "shared_resources.csv"
-      ),
+    shared = data.frame(
+      key = names(raw$shared_resources),
+      value = unlist(raw$shared_resources),
       stringsAsFactors = FALSE
     ),
-    root_paths = read.csv(
-      file.path(
-        basedir,
-        "config",
-        "root_paths.csv"
-      ),
+    
+    root_paths = data.frame(
+      root_name = names(raw$root_paths),
+      path = unlist(raw$root_paths),
       stringsAsFactors = FALSE
     )
   )
@@ -207,16 +200,13 @@ build_replacements <- function(
 
 create_batch_job <- function(
     job_name,
-    basedir = "batch_jobs",
+    generated_dir,
     output_name = job_name,
-    extra_values = list()
+    extra_values = list(),
+    config_file = "config/config.yml"
 ) {
   
-  basedir <- normalizePath(basedir)
-  extra_values <- c(extra_values, list(basedir = basedir))
-  
   template_file <- file.path(
-    basedir,
     "slurm",
     "job_template.sh"
   )
@@ -225,7 +215,7 @@ create_batch_job <- function(
     stop("Missing batch template file")
   }
   
-  cfg <- load_job_config(basedir)
+  cfg <- load_job_config(config_file)
   
   required_cols <- c(
     "job_name",
@@ -296,10 +286,7 @@ create_batch_job <- function(
     replacements
   )
   
-  output_dir <- file.path(
-    basedir,
-    "generated"
-  )
+  output_dir <- generated_dir
   
   dir.create(
     output_dir,

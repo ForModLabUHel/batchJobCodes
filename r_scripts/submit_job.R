@@ -8,42 +8,28 @@ args <- commandArgs(trailingOnly = TRUE)
 
 job_name <- args[1]
 
-basedir <- if (
-  length(args) >= 2
-) {
-  args[2]
-} else {
-  "batch_jobs"
-}
-
 
 # SOURCE ------------------------------------------------------------------
 
 
-source(
-  file.path(
-    basedir,
-    "r_scripts",
-    "create_batch_job.R"
-  )
-)
+source("r_scripts/create_batch_job.R")
+source("r_scripts/create_submission_plan.R")
 
-source(
-  file.path(
-    basedir,
-    "r_scripts",
-    "create_submission_plan.R"
-  )
-)
+
+
+# SET VARIABLES -----------------------------------------------------------
+
+
+config_file <- "config/config.yml"
+framework_dir <- normalizePath(getwd())
 
 
 # CREATE PLAN DIR ---------------------------------------------------------
 
 
 generated_dir <- file.path(
-  basedir,
-  "config",
-  "generated"
+  "generated",
+  job_name
 )
 
 dir.create(
@@ -63,7 +49,8 @@ plan_file <- file.path(
 
 plan <- create_submission_plan(
   job_name = job_name,
-  basedir = basedir
+  generated_dir = generated_dir,
+  config_file = config_file
 )
 
 write.table(
