@@ -1,0 +1,23 @@
+jobs:
+  - job_name: job_name
+    entry_point: /path/to/script
+    tier: example_tier
+    database: DB_EXAMPLE
+    runner_script: /path/to/script
+
+resource_tiers:
+  - tier: example_tier
+    cpus_per_task: 5
+    mem: 8G
+    time: "00:05:00"
+
+shared_resources:
+  partition: <partition>
+  account: <account>
+  output: sbaOut/output_%j.txt
+  error: sbaOut/errors_%j.txt
+  ntasks: 1
+  nodes: 1
+
+root_paths:
+  DB_EXAMPLE: /path/to/db
