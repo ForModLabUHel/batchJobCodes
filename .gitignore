@@ -1,0 +1,5 @@
+generated/
+sbaOut/
+config/*.csv
+!config/*_example.csv
+r_scripts/batchRunner_run_and_report.R

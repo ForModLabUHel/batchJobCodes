@@ -1,0 +1,2 @@
+job_name,database,entry_point,runner_script,n_sets,n_chains,tier
+job_name,database_path,entry_script,custom_run_script,1,1,resource_tier
