@@ -19,6 +19,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 export JOB_NAME="{{JOB_NAME}}"
 export BATCH_FRAMEWORK_DIR="{{FRAMEWORK_DIR}}"
+export SET_ID="{{SET_ID}}"
 
 module load r-env/452
 
