@@ -51,7 +51,8 @@ plan_file <- file.path(
 plan <- create_submission_plan(
   job_name = job_name,
   generated_dir = generated_dir,
-  config_file = config_file
+  config_file = config_file,
+  framework_dir = framework_dir
 )
 
 write.table(
