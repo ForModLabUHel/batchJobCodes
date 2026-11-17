@@ -2,8 +2,7 @@
 
 
 # Resolve the full path for a file using a path_spec eg. PROJECT:Rsrc/runModel.R
-# and a lookup file (roots). The lookup file should be a table with the base path
-# set for each root ie. column root_name = "PROJECT" and column path = <path to project>
+# and a named root-path mapping.
 resolve_root_path <- function(path_spec, roots) {
   
   parts <- strsplit(
@@ -12,25 +11,18 @@ resolve_root_path <- function(path_spec, roots) {
     fixed = TRUE
   )[[1]]
   
-  checkmate::assert_character(
-    parts,
-    len = 2
-  )
+  if (length(parts) != 2 || any(!nzchar(parts))) {
+    stop("Invalid path specification: ", path_spec)
+  }
   
   root_name <- parts[1]
   rel_path <- parts[2]
   
-  root <- roots$path[
-    match(
-      root_name,
-      roots$root_name
-    )
-  ]
-  
-  checkmate::assert_string(
-    root,
-    na.ok = FALSE
-  )
+  root <- roots[[root_name]]
+
+  if (is.null(root) || length(root) != 1 || is.na(root)) {
+    stop("Unknown root path: ", root_name)
+  }
   
   file.path(root, rel_path)
 }
@@ -45,7 +37,9 @@ resolve_job_paths <- function(job, roots) {
   
   for (col in intersect(path_cols, names(job))) {
     
-    if (!is.na(job[[col]]) &&
+    if (!is.null(job[[col]]) &&
+        length(job[[col]]) == 1 &&
+        !is.na(job[[col]]) &&
         grepl("^[^:]+:", job[[col]])) {
       
       job[[col]] <- resolve_root_path(
@@ -60,51 +54,69 @@ resolve_job_paths <- function(job, roots) {
   job
 }
 
-# Yaml config
+# YAML config
 load_job_config <- function(config_file) {
   
   raw <- yaml::read_yaml(config_file)
   
-  list(
-    jobs = as.data.frame(
-      raw$jobs,
-      stringsAsFactors = FALSE
-    ),
-    
-    tiers = as.data.frame(
-      raw$resource_tiers,
-      stringsAsFactors = FALSE
-    ),
-    
-    shared = data.frame(
-      key = names(raw$shared_resources),
-      value = unlist(raw$shared_resources),
-      stringsAsFactors = FALSE
-    ),
-    
-    root_paths = data.frame(
-      root_name = names(raw$root_paths),
-      path = unlist(raw$root_paths),
-      stringsAsFactors = FALSE
+  required_sections <- c(
+    "jobs",
+    "resource_tiers",
+    "shared_resources",
+    "root_paths"
+  )
+
+  missing_sections <- setdiff(
+    required_sections,
+    names(raw)
+  )
+
+  if (length(missing_sections) > 0) {
+    stop(
+      "Missing YAML sections: ",
+      paste(missing_sections, collapse = ", ")
     )
+  }
+
+  for (section in required_sections) {
+    if (!is.list(raw[[section]])) {
+      stop("YAML section '", section, "' must be a mapping")
+    }
+  }
+
+  if (is.null(names(raw$jobs)) ||
+      is.null(names(raw$resource_tiers)) ||
+      is.null(names(raw$shared_resources)) ||
+      is.null(names(raw$root_paths))) {
+    stop(
+      "jobs, resource_tiers, shared_resources, and root_paths ",
+      "must be named YAML mappings"
+    )
+  }
+
+  list(
+    jobs = raw$jobs,
+    resource_tiers = raw$resource_tiers,
+    shared_resources = raw$shared_resources,
+    root_paths = raw$root_paths
   )
 }
 
-# Get the correct params row from csv 
-get_row <- function(df, column, value) {
+# Get a named configuration entry
+get_config_entry <- function(section, name, section_name) {
   
-  res <- df[df[[column]] == value, ]
+  value <- section[[name]]
   
-  if (nrow(res) != 1) {
+  if (is.null(value)) {
     stop(
-      "Expected exactly one match for ",
-      column,
-      " = ",
-      value
+      "Unknown ",
+      section_name,
+      ": ",
+      name
     )
   }
   
-  res
+  value
 }
 
 # Transforms each parameter into a bash readable placeholder
@@ -158,13 +170,13 @@ build_replacements <- function(
     extra_values = list()
 ) {
   
-  tier_vals <- as.list(tier)
-  tier_vals["tier"] <- NULL
+  tier_vals <- tier
+  tier_vals[["tier"]] <- NULL
   
   values <- c(
-    as.list(job),
+    job,
     tier_vals,
-    as.list(shared_vals),
+    shared_vals,
     extra_values
   )
 
@@ -177,9 +189,7 @@ build_replacements <- function(
 
 # Creates a batch job script using a template with placeholders. Replaces
 # the placeholders with parameters from config files. The identifier for the 
-# parameters is given in job_name. The directory that contains all required
-# files in a structured way is given in basedir (see below). 
-# Note: This is not necessarily the root dir of the project.
+# parameters is given in job_name.
 # Writes the batch script and sets permissions to "755". 
 # Returns the batch script path.
 create_batch_job <- function(
@@ -201,57 +211,41 @@ create_batch_job <- function(
   
   cfg <- load_job_config(config_file)
   
-  required_cols <- c(
-    "job_name",
-    "entry_point",
-    "tier"
-  )
-  
-  missing_cols <- setdiff(
-    required_cols,
-    names(cfg$jobs)
-  )
-  
-  if (length(missing_cols) > 0) {
-    
-    stop(
-      "jobs.csv missing columns: ",
-      paste(
-        missing_cols,
-        collapse = ", "
-      )
-    )
-    
-  }
-  
-  job <- get_row(
+  job <- get_config_entry(
     cfg$jobs,
-    "job_name",
-    job_name
+    job_name,
+    "job"
   )
-  
+
+  if (is.null(job$entry_point) || is.null(job$tier)) {
+    stop(
+      "Job '",
+      job_name,
+      "' must define entry_point and tier"
+    )
+  }
+
+  job$job_name <- job_name
+
   job <- resolve_job_paths(
     job,
     cfg$root_paths
   )
-  # Resolve all roots separately
+
   roots <- setNames(
-    cfg$root_paths$path,
-    paste0(cfg$root_paths$root_name, "_ROOT")
+    cfg$root_paths,
+    paste0(names(cfg$root_paths), "_ROOT")
   )
   
   job <- c(job, as.list(roots))
   
-  tier <- get_row(
-    cfg$tiers,
-    "tier",
-    job$tier
+  tier <- get_config_entry(
+    cfg$resource_tiers,
+    job$tier,
+    "resource tier"
   )
   
-  shared_vals <- setNames(
-    cfg$shared$value,
-    cfg$shared$key
-  )
+  shared_vals <- cfg$shared_resources
   
   template <- paste(
     readLines(template_file),
@@ -295,4 +289,3 @@ create_batch_job <- function(
   
   job_file
 }
-

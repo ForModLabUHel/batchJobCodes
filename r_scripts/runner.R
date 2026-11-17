@@ -36,10 +36,10 @@ cfg <- load_job_config(
 # GET ROW -----------------------------------------------------------------
 
 
-job <- get_row(
+job <- get_config_entry(
   cfg$jobs,
-  "job_name",
-  job_name
+  job_name,
+  "job"
 )
 
 
@@ -56,7 +56,6 @@ print(resolved_job)
 
 
 list2env(resolved_job, envir = .GlobalEnv)
-
 
 
 

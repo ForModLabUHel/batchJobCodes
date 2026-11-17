@@ -6,10 +6,10 @@ create_submission_plan <- function(
 ) {
   cfg <- load_job_config(config_file)
   
-  job <- get_row(
+  job <- get_config_entry(
     cfg$jobs,
-    "job_name",
-    job_name
+    job_name,
+    "job"
   )
   
   n_sets <- set_job_nParam(job$n_sets)
@@ -34,12 +34,14 @@ set_job_nParam <- function(n_param) {
   n_param
 }
 
-create_chain_plan <- function(job_name,
-                              n_sets,
-                              n_chains,
-                              generated_dir = generated_dir,
-                              config_file = config_file,
-                              framework_dir) {
+create_chain_plan <- function(
+    job_name,
+    n_sets,
+    n_chains,
+    generated_dir,
+    config_file,
+    framework_dir
+) {
   rows <- vector(
     "list",
     n_sets
@@ -75,11 +77,7 @@ create_chain_plan <- function(job_name,
         if(set_id == 1)
           ""
       else
-        paste0(
-          job_name,
-          "_set",
-          set_id - 1
-        ),
+        paste0(job_name, "_", set_id - 1),
       stringsAsFactors = FALSE
     )
   }

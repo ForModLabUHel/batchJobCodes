@@ -1,12 +1,12 @@
 jobs:
-  - job_name: job_name
+  job_name:
     entry_point: /path/to/script
     tier: example_tier
     database: DB_EXAMPLE
     runner_script: /path/to/script
 
 resource_tiers:
-  - tier: example_tier
+  example_tier:
     cpus_per_task: 5
     mem: 8G
     time: "00:05:00"

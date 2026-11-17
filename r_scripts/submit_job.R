@@ -1,4 +1,4 @@
-# Create submission plan file from jobs.csv row.
+# Create a submission plan from a named YAML job.
 
 
 # PARSE ARGS --------------------------------------------------------------
