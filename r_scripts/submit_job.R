@@ -24,7 +24,8 @@ config_file <- "config/config.yml"
 framework_dir <- normalizePath(getwd())
 
 
-# CREATE PLAN DIR ---------------------------------------------------------
+# CREATE GENERATED DIR ----------------------------------------------------
+# Directory for programmatically generated files.
 
 
 generated_dir <- file.path(
