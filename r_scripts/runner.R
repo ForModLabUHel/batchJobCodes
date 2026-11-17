@@ -1,31 +1,59 @@
+# GET EXPORTED VARS -------------------------------------------------------
+
+
 job_name <- Sys.getenv("JOB_NAME")
-basedir  <- Sys.getenv("BATCH_JOBS_DIR")
+framework_dir <- Sys.getenv("BATCH_FRAMEWORK_DIR")
+
+if (!nzchar(framework_dir)) {
+  stop("BATCH_FRAMEWORK_DIR is not set")
+}
+
+
+# SOURCE ------------------------------------------------------------------
+
 
 source(
   file.path(
-    basedir,
+    framework_dir,
     "r_scripts",
     "create_batch_job.R"
   )
 )
 
-cfg <- load_job_config(basedir)
+
+# LOAD CONFIG -------------------------------------------------------------
+
+
+cfg <- load_job_config(
+  file.path(
+    framework_dir,
+    "config",
+    "config.yml"
+  )
+)
+
+
+# GET ROW -----------------------------------------------------------------
+
+
 job <- get_row(
   cfg$jobs,
   "job_name",
   job_name
 )
 
-print("basedir")
-print(basedir)
 
-root_paths <- file.path(basedir, "config", "root_paths.csv")
-roots <- read.csv(root_paths)
+# RESOLVE PATHS -----------------------------------------------------------
 
-resolved_job <- resolve_job_paths(job, roots)
+
+resolved_job <- resolve_job_paths(job, cfg$root_paths)
 
 print("resolved job")
 print(resolved_job)
+
+
+# LOAD JOB VARS INTO ENV --------------------------------------------------
+
 
 list2env(resolved_job, envir = .GlobalEnv)
 
