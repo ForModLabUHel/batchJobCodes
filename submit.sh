@@ -58,7 +58,6 @@ fi
 
 declare -A JOB_IDS
 
-tail -n +2 "${PLAN_FILE}" |
 while IFS='|' read -r job_key job_file depends_on
 do
 
@@ -90,4 +89,4 @@ do
 
     echo "Submitted ${job_key} (${JOB_ID})"
 
-done
+done < <(tail -n +2 "${PLAN_FILE}")
