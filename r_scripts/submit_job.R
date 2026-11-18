@@ -1,14 +1,6 @@
 # Create a submission plan from a named YAML job.
 
 
-# PARSE ARGS --------------------------------------------------------------
-
-
-args <- commandArgs(trailingOnly = TRUE)
-
-job_name <- args[1]
-
-
 # SOURCE ------------------------------------------------------------------
 
 
@@ -16,11 +8,31 @@ source("r_scripts/create_batch_job.R")
 source("r_scripts/create_submission_plan.R")
 
 
+# PARSE AND VALIDATE ARGS -------------------------------------------------
+
+
+args <- commandArgs(trailingOnly = TRUE)
+
+if (length(args) != 1 || !nzchar(args[1])) {
+  stop("A job name is required")
+}
+
+job_name <- args[1]
+config_file <- "config/config.yml"
+
+cfg <- load_job_config(config_file)
+
+if (!job_name %in% names(cfg$jobs)) {
+  stop(
+    "Unknown job '", job_name, "'. Available jobs: ",
+    paste(sort(names(cfg$jobs)), collapse = ", ")
+  )
+}
+
 
 # SET VARIABLES -----------------------------------------------------------
 
 
-config_file <- "config/config.yml"
 framework_dir <- normalizePath(getwd())
 
 

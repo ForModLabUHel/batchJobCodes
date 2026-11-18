@@ -109,10 +109,9 @@ get_config_entry <- function(section, name, section_name) {
   
   if (is.null(value)) {
     stop(
-      "Unknown ",
-      section_name,
-      ": ",
-      name
+      "Unknown ", section_name, ": ", name,
+      ". Available ", section_name, " names: ",
+      paste(sort(names(section)), collapse = ", ")
     )
   }
   
