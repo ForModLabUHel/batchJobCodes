@@ -11,10 +11,15 @@ create_submission_plan <- function(
     job_name,
     "job"
   )
+
+  job <- resolve_job_paths(job, cfg$root_paths)
   
   n_sets <- set_job_nParam(job$n_sets)
   n_chains <- set_job_nParam(job$n_chains)
   input_directory <- job$input_directory
+  init_name <- set_cal_name(job$init_name, "calInit")
+  output_prefix <- set_cal_name(job$output_prefix, "calOut")
+  extension <- set_cal_name(job$extension, "rdata")
 
   if (!is.null(input_directory) && nzchar(input_directory)) {
     return(create_file_based_submission_plan(
@@ -23,7 +28,10 @@ create_submission_plan <- function(
       generated_dir = generated_dir,
       config_file = config_file,
       framework_dir = framework_dir,
-      reporting_job_name = job$reporting_job
+      reporting_job_name = job$reporting_job,
+      init_name = init_name,
+      output_prefix = output_prefix,
+      extension = extension
     ))
   }
   
@@ -46,6 +54,19 @@ set_job_nParam <- function(n_param) {
   n_param
 }
 
+set_cal_name <- function(value, default, lowercase = FALSE) {
+  if (is.null(value) || length(value) != 1 ||
+     is.na(value) || !nzchar(value)) {
+   return(default)
+  }
+  value <- sub("^\\.", "", as.character(value))
+  if (lowercase) {
+   tolower(value)
+  } else {
+   value
+  }
+}
+
 create_file_based_submission_plan <- function(
     job_name,
     input_directory,
@@ -53,6 +74,9 @@ create_file_based_submission_plan <- function(
     config_file,
     framework_dir,
     reporting_job_name = NULL,
+    init_name = "calInit",
+    output_prefix = "calOut",
+    extension = "rdata",
     create_job = create_batch_job
 ) {
   handler_file <- file.path(
@@ -75,20 +99,39 @@ create_file_based_submission_plan <- function(
 
   cfg <- load_job_config(config_file)
   job <- get_config_entry(cfg$jobs, job_name, "job")
+  job <- resolve_job_paths(job, cfg$root_paths)
   n_sets <- set_job_nParam(job$n_sets)
   n_chains <- set_job_nParam(job$n_chains)
+  init_name <- set_cal_name(
+    if (is.null(job$init_name)) init_name else job$init_name,
+    init_name
+  )
+  output_prefix <- set_cal_name(
+    if (is.null(job$output_prefix)) output_prefix else job$output_prefix,
+    output_prefix
+  )
+  extension <- set_cal_name(
+    if (is.null(job$extension)) extension else job$extension,
+    extension
+  )
 
   validate_cal_files(
     input_directory,
     n_sets,
     n_chains,
+    init_name,
+    output_prefix,
+    extension,
     throw = TRUE
   )
 
   run_table <- create_cal_run_table(
     input_directory,
     n_sets,
-    n_chains
+    n_chains,
+    init_name,
+    output_prefix,
+    extension
   )
 
   if (nrow(run_table) == 0) {

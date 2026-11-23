@@ -17,7 +17,7 @@ make_calibration_directory <- function(file_names = character()) {
 
   for (file_name in file_names) {
     file_path <- file.path(directory, file_name)
-    if (grepl("\\.rdata$", file_name, ignore.case = TRUE)) {
+    if (grepl("\\.(rdata|rds)$", file_name, ignore.case = TRUE)) {
       value <- 1
       save(value, file = file_path)
     } else {
@@ -28,7 +28,8 @@ make_calibration_directory <- function(file_names = character()) {
   directory
 }
 
-make_calibration_config <- function(n_sets, n_chains) {
+make_calibration_config <- function(n_sets, n_chains,
+                                    calibration_params = character()) {
   directory <- tempfile("cal-plan-config-")
   dir.create(directory)
   config_file <- file.path(directory, "config.yml")
@@ -187,4 +188,27 @@ test_that("invalid validator state prevents plan creation", {
     ),
     "Calibration file validation failed"
   )
+})
+
+test_that("custom calibration names are passed to validator and handler", {
+  input_directory <- make_calibration_directory(c(
+    "start.rdata",
+    "result_1_1.rdata"
+  ))
+  config_file <- make_calibration_config(2, 2)
+
+  plan <- create_file_based_submission_plan(
+    job_name = "calibration",
+    input_directory = input_directory,
+    generated_dir = tempfile("cal-plan-output-"),
+    config_file = config_file,
+    framework_dir = repository_root,
+    init_name = "start",
+    output_prefix = "result",
+    extension = "rdata",
+    create_job = fake_create_job
+  )
+
+  expect_equal(nrow(plan), 2)
+  expect_equal(readLines(plan$job_file[[1]]), "calibration|1|2")
 })

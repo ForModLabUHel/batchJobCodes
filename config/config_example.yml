@@ -8,6 +8,9 @@ jobs:
     n_chains: 21
     input_directory: /path/to/calibration/files
     reporting_job: reporting_job_name
+    init_name: calInit
+    output_prefix: calOut
+    extension: rdata
 
 resource_tiers:
   example_tier:

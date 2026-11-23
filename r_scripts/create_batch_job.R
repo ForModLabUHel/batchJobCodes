@@ -32,7 +32,8 @@ resolve_job_paths <- function(job, roots) {
   path_cols <- c(
     "entry_point",
     "runner_script",
-    "database"
+    "database",
+    "input_directory"
   )
   
   for (col in intersect(path_cols, names(job))) {
