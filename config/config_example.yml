@@ -4,6 +4,10 @@ jobs:
     tier: example_tier
     database: DB_EXAMPLE
     runner_script: /path/to/script
+    n_sets: 9
+    n_chains: 21
+    input_directory: /path/to/calibration/files
+    reporting_job: reporting_job_name
 
 resource_tiers:
   example_tier:

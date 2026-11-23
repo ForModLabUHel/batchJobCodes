@@ -56,6 +56,7 @@ scan_cal_files <- function(directory = ".",
 
       rows[[length(rows) + 1]] <- data.frame(
         set_id = set_id,
+        original_set_id = set_id,
         chain_id = chain_id,
         input_file = input_file,
         output_file = output_file,
@@ -118,6 +119,7 @@ create_cal_run_table <- function(directory = ".",
   if (first_set > n_sets) {
     return(data.frame(
       set_id = integer(),
+      original_set_id = integer(),
       chain_id = integer(),
       input_file = character(),
       output_file = character(),
@@ -167,6 +169,7 @@ create_cal_run_table <- function(directory = ".",
 
       rows[[length(rows) + 1]] <- data.frame(
         set_id = remaining_set_number,
+        original_set_id = original_set_id,
         chain_id = chain_id,
         input_file = input_file,
         output_file = output_file,
