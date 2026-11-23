@@ -76,47 +76,42 @@ create_cal_run_table <- function(directory = ".",
                                  init_name = "calInit",
                                  output_prefix = "calOut",
                                  extension = "rdata") {
-  check_cal_integer(n_sets, "n_sets")
-  check_cal_integer(n_chains, "n_chains")
+  run_table <- scan_cal_files(
+    directory,
+    n_sets,
+    n_chains,
+    init_name,
+    output_prefix,
+    extension
+  )
 
-  if (!dir.exists(directory)) {
-    stop("Input directory does not exist: '", directory, "'", call. = FALSE)
-  }
-
-  extension <- sub("^\\.", "", tolower(extension))
-  files <- list.files(directory, all.files = FALSE, full.names = FALSE)
-  init_file <- paste0(init_name, ".", extension)
-
-  highest_set <- 0L
+  # A missing output or input makes this chain rerun. Then every downstream
+  # chain with the same chain ID is rerun too.
   for (set_id in seq_len(n_sets)) {
-    has_output <- any(vapply(seq_len(n_chains), function(chain_id) {
-      cal_output_file_name(
-        output_prefix, set_id, chain_id, extension
-      ) %in% files
-    }, logical(1)))
-
-    if (has_output) {
-      highest_set <- set_id
+    for (chain_id in seq_len(n_chains)) {
+      row <- run_table[
+        run_table$set_id == set_id &
+        run_table$chain_id == chain_id,
+      ]
+      if (nrow(row) == 1 && row$needs_run) {
+        for (downstream_set in seq(set_id + 1L, n_sets)) {
+          if (downstream_set > n_sets) {
+            break
+          }
+          downstream <- run_table$set_id == downstream_set &
+            run_table$chain_id == chain_id
+          run_table$needs_run[downstream] <- TRUE
+          run_table$reason[downstream] <- paste0(
+            "upstream set ", set_id,
+            ", chain ", chain_id, " needs to run"
+          )
+        }
+      }
     }
   }
 
-  if (highest_set == 0L) {
-    first_set <- 1L
-  } else {
-    complete_chains <- vapply(seq_len(n_chains), function(chain_id) {
-      cal_output_file_name(
-        output_prefix, highest_set, chain_id, extension
-      ) %in% files
-    }, logical(1))
-
-    if (all(complete_chains)) {
-      first_set <- highest_set + 1L
-    } else {
-      first_set <- highest_set
-    }
-  }
-
-  if (first_set > n_sets) {
+  run_table <- run_table[run_table$needs_run, ]
+  if (nrow(run_table) == 0) {
     return(data.frame(
       set_id = integer(),
       original_set_id = integer(),
@@ -129,66 +124,55 @@ create_cal_run_table <- function(directory = ".",
     ))
   }
 
-  rows <- list()
-  first_set_is_partial <- FALSE
+  first_incomplete_set <- min(run_table$set_id)
+  original_sets <- sort(unique(
+    run_table$set_id[run_table$set_id >= first_incomplete_set]
+  ))
 
-  if (highest_set > 0L) {
-    complete_chains <- vapply(seq_len(n_chains), function(chain_id) {
-      cal_output_file_name(
-        output_prefix, highest_set, chain_id, extension
-      ) %in% files
-    }, logical(1))
-    first_set_is_partial <- first_set == highest_set && !all(complete_chains)
+  for (submission_set_id in seq_along(original_sets)) {
+    original_set_id <- original_sets[[submission_set_id]]
+    run_table$set_id[
+      run_table$set_id == original_set_id
+    ] <- submission_set_id
   }
 
-  remaining_set_number <- 1L
-  for (original_set_id in seq(first_set, n_sets)) {
-    chain_ids <- seq_len(n_chains)
-
-    if (first_set_is_partial && original_set_id == first_set) {
-      chain_ids <- chain_ids[
-        !vapply(chain_ids, function(chain_id) {
-          cal_output_file_name(
-            output_prefix, original_set_id, chain_id, extension
-          ) %in% files
-        }, logical(1))
-      ]
-    }
-
-    for (chain_id in chain_ids) {
-      input_file <- if (original_set_id == 1L) {
-        init_file
-      } else {
-        cal_output_file_name(
-          output_prefix, original_set_id - 1L, chain_id, extension
-        )
-      }
-      output_file <- cal_output_file_name(
-        output_prefix, original_set_id, chain_id, extension
-      )
-
-      rows[[length(rows) + 1]] <- data.frame(
-        set_id = remaining_set_number,
-        original_set_id = original_set_id,
-        chain_id = chain_id,
-        input_file = input_file,
-        output_file = output_file,
-        needs_run = TRUE,
-        reason = paste0(
-          "calibration set ", original_set_id,
-          ", chain ", chain_id, " needs to run"
-        ),
-        stringsAsFactors = FALSE
-      )
-    }
-
-    remaining_set_number <- remaining_set_number + 1L
-  }
-
-  do.call(rbind, rows)
+  run_table
 }
 
 handle_cal_files <- create_cal_run_table
+
+read_cal_run_table_row <- function(run_table_file,
+                                   original_set_id,
+                                   chain_id) {
+  if (!nzchar(run_table_file) ||
+      !file.exists(run_table_file)) {
+    stop("Calibration run table does not exist: '",
+         run_table_file, "'", call. = FALSE)
+  }
+
+  run_table <- utils::read.table(
+    run_table_file,
+    sep = "|",
+    header = TRUE,
+    stringsAsFactors = FALSE
+  )
+
+  rows <- run_table[
+    run_table$original_set_id == original_set_id &
+    run_table$chain_id == chain_id,
+  ]
+
+  if (nrow(rows) != 1) {
+    stop(
+      "Run table has ", nrow(rows),
+      " rows for original set ", original_set_id,
+      ", chain ", chain_id,
+      call. = FALSE
+    )
+  }
+
+  rows
+}
 
 create_cal_array_specs <- function(run_table) {
   set_ids <- sort(unique(run_table$set_id))

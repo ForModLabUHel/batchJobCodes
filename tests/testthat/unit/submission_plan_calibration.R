@@ -126,13 +126,15 @@ test_that("partial highest set creates partial array and remaining sets", {
   expect_equal(plan$job_key, c(
     "calibration_1",
     "calibration_2",
-    "calibration_3"
+    "calibration_3",
+    "calibration_4"
   ))
 
   scripts <- lapply(plan$job_file, readLines)
-  expect_equal(scripts[[1]], "calibration|2|2-3")
-  expect_equal(scripts[[2]], "calibration|3|1-3")
-  expect_equal(scripts[[3]], "calibration|4|1-3")
+  expect_equal(scripts[[1]], "calibration|1|3")
+  expect_equal(scripts[[2]], "calibration|2|2-3")
+  expect_equal(scripts[[3]], "calibration|3|1-3")
+  expect_equal(scripts[[4]], "calibration|4|1-3")
 })
 
 test_that("reporting job can be inserted between sets", {

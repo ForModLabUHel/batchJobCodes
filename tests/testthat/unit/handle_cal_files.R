@@ -16,6 +16,30 @@ make_directory <- function(file_names = character()) {
   directory
 }
 
+test_that("first incomplete set blocks and reruns dependent chains", {
+  directory <- make_directory(c(
+    "calInit.rdata",
+    "calOut_1_1.rdata",
+    "calOut_1_2.rdata",
+    "calOut_2_1.rdata"
+  ))
+
+  table <- create_cal_run_table(directory, 3, 3)
+
+  expect_equal(
+    table$chain_id[table$set_id == 1],
+    c(3)
+  )
+  expect_equal(
+    table$chain_id[table$set_id == 2],
+    c(2, 3)
+  )
+  expect_equal(
+    table$chain_id[table$set_id == 3],
+    c(1, 2, 3)
+  )
+})
+
 test_that("init only creates the full ordered run table", {
   directory <- make_directory("calInit.rdata")
 
@@ -38,7 +62,7 @@ test_that("init only creates the full ordered run table", {
   expect_true(all(table$needs_run))
 })
 
-test_that("highest partial set runs only missing chains", {
+test_that("first incomplete set runs only missing chains", {
   directory <- make_directory(c(
     "calInit.rdata",
     "calOut_1_1.rdata",
@@ -112,11 +136,14 @@ test_that("complete highest set starts the next set", {
 })
 
 test_that("run after set 18 creates only sets 1 and 2", {
-  directory <- make_directory(c(
-    "calInit.rdata",
-    "calOut_18_1.rdata",
-    "calOut_18_2.rdata"
-  ))
+  file_names <- "calInit.rdata"
+  for (set_id in seq_len(18)) {
+    file_names <- c(
+      file_names,
+      paste0("calOut_", set_id, "_", 1:2, ".rdata")
+    )
+  }
+  directory <- make_directory(file_names)
 
   table <- create_cal_run_table(directory, 20, 2)
 

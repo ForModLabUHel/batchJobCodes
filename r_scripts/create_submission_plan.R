@@ -144,6 +144,18 @@ create_file_based_submission_plan <- function(
   }
 
   array_specs <- create_cal_array_specs(run_table)
+  run_table_file <- file.path(
+    generated_dir,
+    paste0(job_name, "_calibration_run_table.csv")
+  )
+  dir.create(generated_dir, recursive = TRUE, showWarnings = FALSE)
+  utils::write.table(
+    run_table,
+    run_table_file,
+    sep = "|",
+    row.names = FALSE,
+    quote = FALSE
+  )
   rows <- list()
   previous_job_key <- ""
 
@@ -171,7 +183,12 @@ create_file_based_submission_plan <- function(
       extra_values = list(
         framework_dir = framework_dir,
         set_id = original_set_id,
-        array_spec = set_row$array_spec
+        array_spec = set_row$array_spec,
+        run_table_file = normalizePath(
+          run_table_file,
+          winslash = "/",
+          mustWork = FALSE
+        )
       ),
       output_name = job_key
     )

@@ -4,6 +4,7 @@
 job_name <- Sys.getenv("JOB_NAME")
 framework_dir <- Sys.getenv("BATCH_FRAMEWORK_DIR")
 setID <- Sys.getenv("SET_ID")
+calRunTableFile <- Sys.getenv("CAL_RUN_TABLE_FILE")
 
 if (!nzchar(framework_dir)) {
   stop("BATCH_FRAMEWORK_DIR is not set")
@@ -42,6 +43,22 @@ job <- get_config_entry(
   job_name,
   "job"
 )
+
+if (nzchar(calRunTableFile) && file.exists(calRunTableFile)) {
+  source(
+    file.path(
+      framework_dir,
+      "r_scripts",
+      "handle_cal_files.R"
+    )
+  )
+  calRunRow <- read_cal_run_table_row(
+    calRunTableFile,
+    as.integer(setID),
+    as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+  )
+  calRunTableRow <- calRunRow
+}
 
 
 # RESOLVE PATHS -----------------------------------------------------------
