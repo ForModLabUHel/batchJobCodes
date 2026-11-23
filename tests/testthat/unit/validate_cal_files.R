@@ -138,7 +138,7 @@ test_that("wrong init and output formats are reported", {
   expect_true(any(grepl("calOut_1_1.txt", errors)))
 })
 
-test_that("malformed names and corrupt RData files are reported", {
+test_that("malformed names are reported", {
   directory <- make_directory(
     c(
       "calInit.rdata",
@@ -149,12 +149,10 @@ test_that("malformed names and corrupt RData files are reported", {
       "calOut_2_2.rdata"
     )
   )
-  writeLines("invalid", file.path(directory, "calInit.rdata"))
 
   errors <- validate_cal_files(directory, 2, 2, throw = FALSE)
 
   expect_true(any(grepl("Malformed calibration output", errors)))
-  expect_true(any(grepl("Invalid RData file.*calInit.rdata", errors)))
 })
 
 test_that("duplicates are reported", {

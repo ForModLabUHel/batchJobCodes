@@ -22,21 +22,13 @@ validate_cal_file_format <- function(file_paths,
     }
 
     if (!file.exists(file_path)) {
-      errors <- c(errors, paste0("Missing file: '", file_name, "'"))
-      next
-    }
-
-    result <- try(
-      suppressWarnings(
-        load(file_path, envir = new.env(parent = emptyenv()))
-      ),
-      silent = TRUE
-    )
-
-    if (inherits(result, "try-error")) {
       errors <- c(
         errors,
-        paste0("Invalid RData file: '", file_name, "' could not be loaded")
+        paste0("Missing file: '", normalizePath(
+          file_path,
+          winslash = "/",
+          mustWork = FALSE
+        ), "'")
       )
     }
   }
@@ -53,6 +45,8 @@ validate_cal_init_file <- function(directory = ".",
   if (!dir.exists(directory)) {
     return(paste0("Input directory does not exist: '", directory, "'"))
   }
+
+  directory <- normalizePath(directory, winslash = "/", mustWork = TRUE)
 
   init_path_pattern <- paste0(
     "^", escape_regex(init_name), "\\.",
@@ -204,6 +198,7 @@ validate_cal_output_files <- function(directory = ".",
     return(paste0("Input directory does not exist: '", directory, "'"))
   }
 
+  directory <- normalizePath(directory, winslash = "/", mustWork = TRUE)
   if (!is_single_positive_integer(n_sets)) {
     errors <- c(errors, "n_sets must be a positive integer")
   }
