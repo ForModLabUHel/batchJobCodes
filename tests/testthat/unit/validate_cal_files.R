@@ -43,13 +43,71 @@ test_that("valid files pass validation", {
   )
 })
 
-test_that("missing init and outputs are reported together", {
+test_that("missing init is reported for an existing output", {
   directory <- make_directory("calOut_1_1.rdata")
 
   errors <- validate_cal_files(directory, 2, 2, throw = FALSE)
 
   expect_true(any(grepl("Missing init file", errors)))
-  expect_true(any(grepl("calOut_2_2.rdata", errors)))
+  expect_true(any(grepl("Missing input.*calInit.rdata", errors)))
+})
+
+test_that("later set output requires the previous set chain", {
+  directory <- make_directory(c(
+    "calInit.rdata",
+    "calOut_1_1.rdata",
+    "calOut_2_2.rdata"
+  ))
+
+  errors <- validate_cal_files(directory, 2, 2, throw = FALSE)
+
+  expect_true(any(grepl(
+    "Missing input.*calOut_1_2.rdata.*calOut_2_2.rdata",
+    errors
+  )))
+})
+
+test_that("partial highest set is valid resume state", {
+  directory <- make_directory(c(
+    "calInit.rdata",
+    "calOut_1_1.rdata"
+  ))
+
+  expect_length(
+    validate_cal_files(directory, 2, 2, throw = FALSE),
+    0
+  )
+})
+
+test_that("later set chain cannot exist without earlier chain", {
+  directory <- make_directory(c(
+    "calInit.rdata",
+    "calOut_1_1.rdata",
+    "calOut_2_2.rdata"
+  ))
+
+  errors <- validate_cal_files(directory, 2, 2, throw = FALSE)
+
+  expect_true(any(grepl(
+    "Missing input.*calOut_1_2.rdata",
+    errors
+  )))
+})
+
+test_that("complete later set cannot hide missing earlier set chains", {
+  directory <- make_directory(c(
+    "calInit.rdata",
+    "calOut_1_1.rdata",
+    "calOut_2_1.rdata",
+    "calOut_2_2.rdata"
+  ))
+
+  errors <- validate_cal_files(directory, 2, 2, throw = FALSE)
+
+  expect_true(any(grepl(
+    "Missing input.*calOut_1_2.rdata",
+    errors
+  )))
 })
 
 test_that("set and chain IDs must be within configured ranges", {

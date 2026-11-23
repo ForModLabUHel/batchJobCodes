@@ -195,7 +195,8 @@ validate_cal_output_files <- function(directory = ".",
                                       n_sets,
                                       n_chains,
                                       output_prefix = "calOut",
-                                      extension = "rdata") {
+                                      extension = "rdata",
+                                      init_name = "calInit") {
   extension <- sub("^\\.", "", tolower(extension))
   errors <- character()
 
@@ -313,15 +314,47 @@ validate_cal_output_files <- function(directory = ".",
     )
   }
 
+  init_file <- paste0(init_name, ".", extension)
+  init_exists <- init_file %in% files
+
   for (set_id in seq_len(n_sets)) {
     for (chain_id in seq_len(n_chains)) {
-      key <- paste(set_id, chain_id, sep = "_")
-      if (is.null(parsed_files[[key]])) {
+      output_key <- paste(set_id, chain_id, sep = "_")
+      if (is.null(parsed_files[[output_key]])) {
+        next
+      }
+
+      output_file <- paste0(
+        output_prefix, "_", set_id, "_", chain_id, ".", extension
+      )
+
+      if (set_id == 1) {
+        if (!init_exists) {
+          errors <- c(
+            errors,
+            paste0(
+              "Missing input '", init_file,
+              "' for existing output '", output_file, "'"
+            )
+          )
+        }
+        next
+      }
+
+      input_set_id <- set_id - 1
+      input_key <- paste(input_set_id, chain_id, sep = "_")
+      if (is.null(parsed_files[[input_key]])) {
+        input_file <- paste0(
+          output_prefix, "_", input_set_id, "_",
+          chain_id, ".", extension
+        )
         errors <- c(
           errors,
           paste0(
-            "Missing calibration output file: '", output_prefix,
-            "_", set_id, "_", chain_id, ".", extension, "'"
+            "Missing input '", input_file,
+            "' for existing output '", output_file,
+            "' (set ", input_set_id, ", chain ", chain_id,
+            " is incomplete)"
           )
         )
       }
@@ -345,7 +378,8 @@ validate_cal_files <- function(directory = ".",
       n_sets,
       n_chains,
       output_prefix,
-      extension
+      extension,
+      init_name
     ),
     validate_cal_init_names(
       list.files(directory, all.files = FALSE),
