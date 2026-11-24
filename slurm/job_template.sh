@@ -14,6 +14,8 @@
 
 set -euo pipefail
 
+module load r-env/452
+
 # set the number of threads based on --cpus-per-task
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
@@ -21,8 +23,6 @@ export JOB_NAME="{{JOB_NAME}}"
 export BATCH_FRAMEWORK_DIR="{{FRAMEWORK_DIR}}"
 export SET_ID="{{SET_ID}}"
 export CAL_RUN_TABLE_FILE="{{RUN_TABLE_FILE}}"
-
-module load r-env/452
 
 cd "{{PROJECT_ROOT}}"
 
