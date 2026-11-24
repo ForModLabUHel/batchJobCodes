@@ -7,9 +7,21 @@ repository_root <- normalizePath(
 )
 source(file.path(repository_root, "r_scripts", "validate_cal_files.R"))
 
-make_directory <- function(file_names = character()) {
-  directory <- tempfile("cal-validation-")
+created_temp_dirs <- character()
+
+make_temp_directory <- function(prefix) {
+  directory <- tempfile(prefix)
   dir.create(directory)
+  created_temp_dirs <<- c(created_temp_dirs, directory)
+  directory
+}
+
+teardown({
+  unlink(created_temp_dirs, recursive = TRUE, force = TRUE)
+})
+
+make_directory <- function(file_names = character()) {
+  directory <- make_temp_directory("cal-validation-")
 
   for (file_name in file_names) {
     file_path <- file.path(directory, file_name)

@@ -11,9 +11,21 @@ source(file.path(repository_root, "r_scripts", "handle_cal_files.R"))
 source(file.path(repository_root, "r_scripts", "validate_cal_files.R"))
 source(file.path(repository_root, "r_scripts", "create_submission_plan.R"))
 
-make_calibration_directory <- function(file_names = character()) {
-  directory <- tempfile("cal-plan-input-")
+created_temp_dirs <- character()
+
+make_temp_directory <- function(prefix) {
+  directory <- tempfile(prefix)
   dir.create(directory)
+  created_temp_dirs <<- c(created_temp_dirs, directory)
+  directory
+}
+
+teardown({
+  unlink(created_temp_dirs, recursive = TRUE, force = TRUE)
+})
+
+make_calibration_directory <- function(file_names = character()) {
+  directory <- make_temp_directory("cal-plan-input-")
 
   for (file_name in file_names) {
     file_path <- file.path(directory, file_name)
@@ -30,8 +42,7 @@ make_calibration_directory <- function(file_names = character()) {
 
 make_calibration_config <- function(n_sets, n_chains,
                                     calibration_params = character()) {
-  directory <- tempfile("cal-plan-config-")
-  dir.create(directory)
+  directory <- make_temp_directory("cal-plan-config-")
   config_file <- file.path(directory, "config.yml")
 
   writeLines(c(
@@ -85,7 +96,7 @@ fake_create_job <- function(job_name,
 test_that("init-only state creates the full file-based plan", {
   input_directory <- make_calibration_directory("calInit.rdata")
   config_file <- make_calibration_config(2, 3)
-  generated_dir <- tempfile("cal-plan-output-")
+  generated_dir <- make_temp_directory("cal-plan-output-")
 
   plan <- create_file_based_submission_plan(
     job_name = "calibration",
@@ -112,7 +123,7 @@ test_that("partial highest set creates partial array and remaining sets", {
     "calOut_2_1.rdata"
   ))
   config_file <- make_calibration_config(4, 3)
-  generated_dir <- tempfile("cal-plan-output-")
+  generated_dir <- make_temp_directory("cal-plan-output-")
 
   plan <- create_file_based_submission_plan(
     job_name = "calibration",
@@ -140,7 +151,7 @@ test_that("partial highest set creates partial array and remaining sets", {
 test_that("reporting job can be inserted between sets", {
   input_directory <- make_calibration_directory("calInit.rdata")
   config_file <- make_calibration_config(3, 2)
-  generated_dir <- tempfile("cal-plan-output-")
+  generated_dir <- make_temp_directory("cal-plan-output-")
 
   plan <- create_file_based_submission_plan(
     job_name = "calibration",
@@ -183,7 +194,7 @@ test_that("invalid validator state prevents plan creation", {
     create_file_based_submission_plan(
       job_name = "calibration",
       input_directory = input_directory,
-      generated_dir = tempfile("cal-plan-output-"),
+      generated_dir = make_temp_directory("cal-plan-output-"),
       config_file = config_file,
       framework_dir = repository_root,
       create_job = fake_create_job
@@ -202,7 +213,7 @@ test_that("custom calibration names are passed to validator and handler", {
   plan <- create_file_based_submission_plan(
     job_name = "calibration",
     input_directory = input_directory,
-    generated_dir = tempfile("cal-plan-output-"),
+    generated_dir = make_temp_directory("cal-plan-output-"),
     config_file = config_file,
     framework_dir = repository_root,
     init_name = "start",
