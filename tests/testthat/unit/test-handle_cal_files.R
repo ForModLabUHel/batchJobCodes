@@ -197,3 +197,17 @@ test_that("array specs use partial and full array ranges", {
   expect_equal(specs$array_spec[specs$set_id == 1], "1-2")
   expect_equal(specs$array_spec[specs$set_id == 2], "1-3")
 })
+
+test_that("array specs use selective arrays", {
+  table <- data.frame(
+    set_id = c(1, 1, 1, 2, 2, 2),
+    chain_id = c(1, 2, 3, 1, 2, 3),
+    needs_run = c(TRUE, FALSE, TRUE, FALSE, FALSE, TRUE)
+  )
+  
+  specs <- create_cal_array_specs(table)
+  
+  expect_equal(specs$array_spec[specs$set_id == 1], "1,3")
+  expect_equal(specs$array_spec[specs$set_id == 2], "3")
+})
+
