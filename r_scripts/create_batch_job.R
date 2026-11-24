@@ -106,6 +106,11 @@ load_job_config <- function(config_file) {
 # Get a named configuration entry
 get_config_entry <- function(section, name, section_name) {
   
+  if (!is.character(name) || length(name) != 1 ||
+      is.na(name) || !nzchar(name)) {
+    stop("'", section_name, "' name must be a single non-empty string")
+  }
+  
   value <- section[[name]]
   
   if (is.null(value)) {
