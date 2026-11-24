@@ -79,24 +79,6 @@ create_file_based_submission_plan <- function(
     extension = "rdata",
     create_job = create_batch_job
 ) {
-  handler_file <- file.path(
-    framework_dir,
-    "r_scripts",
-    "handle_cal_files.R"
-  )
-  validator_file <- file.path(
-    framework_dir,
-    "r_scripts",
-    "validate_cal_files.R"
-  )
-
-  if (!exists("validate_cal_files", mode = "function")) {
-    source(validator_file)
-  }
-  if (!exists("create_cal_run_table", mode = "function")) {
-    source(handler_file)
-  }
-
   cfg <- load_job_config(config_file)
   job <- get_config_entry(cfg$jobs, job_name, "job")
   job <- resolve_job_paths(job, cfg$root_paths)
