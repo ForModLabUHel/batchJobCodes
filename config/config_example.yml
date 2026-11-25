@@ -1,6 +1,5 @@
 jobs:
   job_name:
-    entry_point: /path/to/script
     tier: example_tier
     database: DB_EXAMPLE
     runner_script: /path/to/script

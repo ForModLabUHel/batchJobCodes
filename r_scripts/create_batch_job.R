@@ -30,7 +30,6 @@ resolve_root_path <- function(path_spec, roots) {
 resolve_job_paths <- function(job, roots) {
   
   path_cols <- c(
-    "entry_point",
     "runner_script",
     "database",
     "input_directory"
@@ -260,11 +259,11 @@ create_batch_job <- function(
     "job"
   )
 
-  if (is.null(job$entry_point) || is.null(job$tier)) {
+  if (is.null(job$tier)) {
     stop(
       "Job '",
       job_name,
-      "' must define entry_point and tier"
+      "' must define tier"
     )
   }
 
