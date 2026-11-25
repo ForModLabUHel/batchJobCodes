@@ -24,6 +24,19 @@ teardown({
   unlink(created_temp_dirs, recursive = TRUE, force = TRUE)
 })
 
+test_that("each submission gets a unique job directory", {
+  parent_dir <- make_temp_directory("generated-jobs-")
+
+  first_dir <- create_unique_job_directory("calibration", parent_dir)
+  second_dir <- create_unique_job_directory("calibration", parent_dir)
+
+  expect_match(basename(first_dir), "^calibration_.+")
+  expect_match(basename(second_dir), "^calibration_.+")
+  expect_false(identical(first_dir, second_dir))
+  expect_true(dir.exists(first_dir))
+  expect_true(dir.exists(second_dir))
+})
+
 make_calibration_directory <- function(file_names = character()) {
   directory <- make_temp_directory("cal-plan-input-")
 
