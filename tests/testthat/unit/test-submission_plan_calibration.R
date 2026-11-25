@@ -42,7 +42,8 @@ make_calibration_directory <- function(file_names = character()) {
 
 make_calibration_config <- function(n_sets, n_chains,
                                     calibration_params = character(),
-                                    output_umask = "0007") {
+                                    output_umask = "0007",
+                                    params_yaml = character()) {
   directory <- make_temp_directory("cal-plan-config-")
   config_file <- file.path(directory, "config.yml")
 
@@ -53,6 +54,7 @@ make_calibration_config <- function(n_sets, n_chains,
     "    tier: small",
     paste0("    n_sets: ", n_sets),
     paste0("    n_chains: ", n_chains),
+    params_yaml,
     "  reporting:",
     "    entry_point: report.R",
     "    tier: small",
@@ -98,6 +100,62 @@ test_that("invalid output umasks are rejected", {
   expect_error(
     load_job_config(config_file),
     "shared_resources.output_umask"
+  )
+})
+
+test_that("job params retain YAML types and are not template placeholders", {
+  previous_wd <- setwd(repository_root)
+  on.exit(setwd(previous_wd), add = TRUE)
+
+  config_file <- make_calibration_config(
+    1,
+    1,
+    params_yaml = c(
+      "    params:",
+      "      iterations: 100",
+      "      labels: [alpha, beta]",
+      "      options:",
+      "        adaptive: true"
+    )
+  )
+  cfg <- load_job_config(config_file)
+  generated_dir <- make_temp_directory("cal-plan-output-")
+
+  job_file <- create_batch_job(
+    job_name = "calibration",
+    generated_dir = generated_dir,
+    config_file = config_file
+  )
+
+  expect_equal(cfg$jobs$calibration$params$iterations, 100)
+  expect_equal(cfg$jobs$calibration$params$labels, c("alpha", "beta"))
+  expect_identical(cfg$jobs$calibration$params$options$adaptive, TRUE)
+  expect_true("params" %in% names(cfg$jobs$calibration))
+  expect_false(any(grepl("\\{\\{PARAMS\\}\\}", readLines(job_file))))
+})
+
+test_that("jobs without params get an empty params list", {
+  config_file <- make_calibration_config(1, 1)
+
+  cfg <- load_job_config(config_file)
+
+  expect_identical(cfg$jobs$calibration$params, list())
+})
+
+test_that("job params must be a named mapping", {
+  config_file <- make_calibration_config(
+    1,
+    1,
+    params_yaml = c(
+      "    params:",
+      "      - first",
+      "      - second"
+    )
+  )
+
+  expect_error(
+    load_job_config(config_file),
+    "params must be a named mapping"
   )
 })
 

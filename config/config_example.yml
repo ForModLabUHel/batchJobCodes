@@ -11,6 +11,9 @@ jobs:
     init_name: calInit
     output_prefix: calOut
     extension: rdata
+    params:
+      seed: 1234
+      tolerance: 0.001
 
 resource_tiers:
   example_tier:

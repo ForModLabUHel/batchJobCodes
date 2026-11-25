@@ -95,6 +95,33 @@ load_job_config <- function(config_file) {
     )
   }
 
+  for (job_name in names(raw$jobs)) {
+    job <- raw$jobs[[job_name]]
+    if (is.null(job) || !is.list(job) || is.null(names(job))) {
+      stop("Job '", job_name, "' must be a mapping", call. = FALSE)
+    }
+
+    if (!"params" %in% names(job)) {
+      job$params <- list()
+    } else {
+      params <- job$params
+      if (!is.list(params) ||
+          (length(params) > 0 &&
+           (is.null(names(params)) ||
+            anyNA(names(params)) ||
+            any(!nzchar(names(params))))) ||
+          anyDuplicated(names(params))) {
+        stop(
+          "Job '", job_name,
+          "' params must be a named mapping",
+          call. = FALSE
+        )
+      }
+    }
+
+    raw$jobs[[job_name]] <- job
+  }
+
   output_umask <- raw$shared_resources$output_umask
   if (!is.character(output_umask) ||
       length(output_umask) != 1 ||
@@ -262,6 +289,8 @@ create_batch_job <- function(
   )
   
   shared_vals <- cfg$shared_resources
+  template_job <- job
+  template_job$params <- NULL
   
   template <- paste(
     readLines(template_file),
@@ -269,7 +298,7 @@ create_batch_job <- function(
   )
   
   replacements <- build_replacements(
-    job,
+    template_job,
     tier,
     shared_vals,
     extra_values
