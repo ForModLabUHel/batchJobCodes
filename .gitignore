@@ -3,3 +3,5 @@ sbaOut/
 config/*.yml
 !config/*_example.yml
 r_scripts/batchRunner_run_and_report.R
+r_scripts/batchRunner_calibration_init.R
+r_scripts/batchRunner_calibration_report.R
