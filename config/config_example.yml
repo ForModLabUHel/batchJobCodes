@@ -23,6 +23,7 @@ shared_resources:
   account: <account>
   output: sbaOut/output_%j.txt
   error: sbaOut/errors_%j.txt
+  output_umask: "0007"
   ntasks: 1
   nodes: 1
 

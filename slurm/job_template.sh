@@ -14,6 +14,8 @@
 
 set -euo pipefail
 
+umask {{OUTPUT_UMASK}}
+
 module load r-env/452
 
 # set the number of threads based on --cpus-per-task

@@ -95,6 +95,17 @@ load_job_config <- function(config_file) {
     )
   }
 
+  output_umask <- raw$shared_resources$output_umask
+  if (!is.character(output_umask) ||
+      length(output_umask) != 1 ||
+      is.na(output_umask) ||
+      !grepl("^[0-7]{3,4}$", output_umask)) {
+    stop(
+      "shared_resources.output_umask must be a quoted 3- or 4-digit octal value",
+      call. = FALSE
+    )
+  }
+
   list(
     jobs = raw$jobs,
     resource_tiers = raw$resource_tiers,

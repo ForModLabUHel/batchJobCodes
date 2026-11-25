@@ -41,7 +41,8 @@ make_calibration_directory <- function(file_names = character()) {
 }
 
 make_calibration_config <- function(n_sets, n_chains,
-                                    calibration_params = character()) {
+                                    calibration_params = character(),
+                                    output_umask = "0007") {
   directory <- make_temp_directory("cal-plan-config-")
   config_file <- file.path(directory, "config.yml")
 
@@ -65,6 +66,7 @@ make_calibration_config <- function(n_sets, n_chains,
     "  account: test",
     "  output: test.out",
     "  error: test.err",
+    paste0('  output_umask: "', output_umask, '"'),
     "  ntasks: 1",
     "  nodes: 1",
     "root_paths:",
@@ -73,6 +75,31 @@ make_calibration_config <- function(n_sets, n_chains,
 
   config_file
 }
+
+test_that("configured output umask is rendered in the job script", {
+  previous_wd <- setwd(repository_root)
+  on.exit(setwd(previous_wd), add = TRUE)
+
+  config_file <- make_calibration_config(1, 1)
+  generated_dir <- make_temp_directory("cal-plan-output-")
+
+  job_file <- create_batch_job(
+    job_name = "calibration",
+    generated_dir = generated_dir,
+    config_file = config_file
+  )
+
+  expect_true("umask 0007" %in% readLines(job_file))
+})
+
+test_that("invalid output umasks are rejected", {
+  config_file <- make_calibration_config(1, 1, output_umask = "0008")
+
+  expect_error(
+    load_job_config(config_file),
+    "shared_resources.output_umask"
+  )
+})
 
 fake_create_job <- function(job_name,
                             generated_dir,
