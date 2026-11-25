@@ -65,6 +65,51 @@ test_that("output root uses the configured path or home default", {
   )
 })
 
+test_that("group access path prefers job override, then shared default", {
+  root <- make_temp_directory("group-access-")
+  default_path <- file.path(root, "databases")
+  job_path <- file.path(default_path, "specific")
+  dir.create(job_path, recursive = TRUE)
+  roots <- list(PROJECT_ROOT = root)
+
+  expect_equal(
+    resolve_group_access_path(
+      list(),
+      list(group_access_path = "PROJECT_ROOT:databases"),
+      roots
+    ),
+    normalizePath(default_path, winslash = "/", mustWork = TRUE)
+  )
+  expect_equal(
+    resolve_group_access_path(
+      list(group_access_path = "PROJECT_ROOT:databases/specific"),
+      list(group_access_path = "PROJECT_ROOT:databases"),
+      roots
+    ),
+    normalizePath(job_path, winslash = "/", mustWork = TRUE)
+  )
+  expect_null(resolve_group_access_path(list(), list(), roots))
+})
+
+test_that("group access recursively grants group read and write", {
+  skip_on_os("windows")
+  output_dir <- make_temp_directory("group-access-output-")
+  output_file <- file.path(output_dir, "result.rds")
+  writeLines("result", output_file)
+  Sys.chmod(output_dir, mode = "0700")
+  Sys.chmod(output_file, mode = "0600")
+
+  apply_group_access_permissions(
+    normalizePath(output_dir, winslash = "/", mustWork = TRUE)
+  )
+
+  group_bits <- bitwAnd(
+    as.integer(file.info(output_file)$mode),
+    as.integer(as.octmode("0060"))
+  )
+  expect_equal(group_bits, as.integer(as.octmode("0060")))
+})
+
 make_calibration_directory <- function(file_names = character()) {
   directory <- make_temp_directory("cal-plan-input-")
 

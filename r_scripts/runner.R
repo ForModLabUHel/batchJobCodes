@@ -65,6 +65,11 @@ if (nzchar(calRunTableFile) && file.exists(calRunTableFile)) {
 
 
 resolved_job <- resolve_job_paths(job, cfg$root_paths)
+group_access_path <- resolve_group_access_path(
+  job,
+  cfg$shared_resources,
+  cfg$root_paths
+)
 
 print("resolved job")
 print(resolved_job)
@@ -83,6 +88,8 @@ job_env <- list2env(
 
 
 source(resolved_job$runner_script, local = job_env)
+
+apply_group_access_permissions(group_access_path)
 
 
 

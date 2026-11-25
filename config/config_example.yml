@@ -10,6 +10,8 @@ jobs:
     init_name: calInit
     output_prefix: calOut
     extension: rdata
+    # Optional job-specific override for shared_resources.group_access_path.
+    # group_access_path: "PROJECT_ROOT:databases/job_name"
     params:
       seed: 1234
       tolerance: 0.001
@@ -26,8 +28,11 @@ shared_resources:
   output: sbaOut/output_%j.txt
   error: sbaOut/errors_%j.txt
   output_umask: "0007"
+  # Optional; omit this and all job-specific overrides to skip chmod.
+  group_access_path: "DATABASE:/"
   ntasks: 1
   nodes: 1
 
 root_paths:
-  DB_EXAMPLE: /path/to/db
+  DATABASE: /path/to/db
+  PROJECT: /path/to/project

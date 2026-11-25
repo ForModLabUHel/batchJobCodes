@@ -80,6 +80,53 @@ resolve_job_paths <- function(job, roots) {
   job
 }
 
+resolve_group_access_path <- function(job, shared_resources, roots) {
+  path <- job$group_access_path
+  if (is.null(path)) {
+    path <- shared_resources$group_access_path
+  }
+  if (is.null(path)) {
+    return(NULL)
+  }
+  if (!is.character(path) ||
+      length(path) != 1 ||
+      is.na(path) ||
+      !nzchar(path)) {
+    stop("group_access_path must be a non-empty path", call. = FALSE)
+  }
+
+  if (grepl("^[^:]+:", path)) {
+    path <- resolve_root_path(path, roots)
+  }
+  path <- path.expand(path)
+  normalizePath(path, winslash = "/", mustWork = FALSE)
+}
+
+apply_group_access_permissions <- function(path) {
+  if (is.null(path)) {
+    return(invisible(NULL))
+  }
+  if (!dir.exists(path)) {
+    stop("group_access_path is not an existing directory: ", path,
+         call. = FALSE)
+  }
+  path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+
+  status <- system2(
+    "chmod",
+    args = c("-R", "g+rwX", "--", shQuote(path))
+  )
+  if (status != 0L) {
+    stop(
+      "Failed to grant group access recursively to '", path,
+      "' (chmod exit status ", status, ")",
+      call. = FALSE
+    )
+  }
+
+  invisible(NULL)
+}
+
 # YAML config
 load_job_config <- function(config_file) {
   
@@ -255,11 +302,8 @@ build_replacements <- function(
 # CREATE BATCH JOB CONTROLLER ---------------------------------------------
 
 
-# Creates a batch job script using a template with placeholders. Replaces
-# the placeholders with parameters from config files. The identifier for the 
-# parameters is given in job_name.
-# Writes the batch script and sets permissions to "755". 
-# Returns the batch script path.
+# Creates a batch job script using a template with placeholders and returns
+# its path. Parameters are identified by job_name.
 create_batch_job <- function(
     job_name,
     generated_dir,
