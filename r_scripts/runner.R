@@ -89,6 +89,9 @@ job_env <- list2env(
 
 source(resolved_job$runner_script, local = job_env)
 
+print("group access")
+print(group_access_path)
+
 apply_group_access_permissions(group_access_path)
 
 
