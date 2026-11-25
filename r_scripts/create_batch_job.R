@@ -1,6 +1,32 @@
 # CREATE BATCH JOB WORKER -------------------------------------------------
 
 
+get_user_output_root <- function() {
+  output_root <- Sys.getenv("BATCH_JOB_CODES_DIR", unset = "")
+  if (!nzchar(output_root)) {
+    output_root <- file.path(path.expand("~"), "batchJobCodesFiles")
+  } else {
+    output_root <- path.expand(output_root)
+  }
+
+  normalizePath(output_root, winslash = "/", mustWork = FALSE)
+}
+
+ensure_directory <- function(path) {
+  if (!dir.exists(path) &&
+      !dir.create(path, recursive = TRUE, showWarnings = FALSE) &&
+      !dir.exists(path)) {
+    stop("Unable to create directory: ", path)
+  }
+
+  if (!dir.exists(path)) {
+    stop("Directory does not exist: ", path)
+  }
+
+  normalizePath(path, winslash = "/", mustWork = TRUE)
+}
+
+
 # Resolve the full path for a file using a path_spec eg. PROJECT:Rsrc/runModel.R
 # and a named root-path mapping.
 resolve_root_path <- function(path_spec, roots) {
@@ -288,6 +314,20 @@ create_batch_job <- function(
   )
   
   shared_vals <- cfg$shared_resources
+  log_dir <- ensure_directory(
+    file.path(get_user_output_root(), "sbaOut")
+  )
+  for (field in c("output", "error")) {
+    log_path <- shared_vals[[field]]
+    if (!is.character(log_path) ||
+        length(log_path) != 1 ||
+        is.na(log_path) ||
+        !nzchar(log_path)) {
+      stop("shared_resources.", field, " must be a non-empty path")
+    }
+    shared_vals[[field]] <- file.path(log_dir, basename(log_path))
+  }
+
   template_job <- job
   template_job$params <- NULL
   
@@ -310,11 +350,7 @@ create_batch_job <- function(
   
   output_dir <- generated_dir
   
-  dir.create(
-    output_dir,
-    recursive = TRUE,
-    showWarnings = FALSE
-  )
+  output_dir <- ensure_directory(output_dir)
   
   job_file <- file.path(
     output_dir,
@@ -324,11 +360,6 @@ create_batch_job <- function(
   writeLines(
     template,
     job_file
-  )
-  
-  Sys.chmod(
-    job_file,
-    mode = "755"
   )
   
   job_file

@@ -8,6 +8,9 @@ usage() {
     echo
     echo "Example:"
     echo "  ./submit.sh germany"
+    echo
+    echo "Output directory:"
+    echo "  BATCH_JOB_CODES_DIR (optional; defaults to ~/batchJobCodesFiles)"
 }
 
 if [ "$#" -ne 1 ]; then

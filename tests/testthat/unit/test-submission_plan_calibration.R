@@ -37,6 +37,34 @@ test_that("each submission gets a unique job directory", {
   expect_true(dir.exists(second_dir))
 })
 
+test_that("output root uses the configured path or home default", {
+  previous_root <- Sys.getenv("BATCH_JOB_CODES_DIR", unset = NA_character_)
+  on.exit({
+    if (is.na(previous_root)) {
+      Sys.unsetenv("BATCH_JOB_CODES_DIR")
+    } else {
+      Sys.setenv(BATCH_JOB_CODES_DIR = previous_root)
+    }
+  }, add = TRUE)
+
+  Sys.unsetenv("BATCH_JOB_CODES_DIR")
+  expect_equal(
+    get_user_output_root(),
+    normalizePath(
+      file.path(path.expand("~"), "batchJobCodesFiles"),
+      winslash = "/",
+      mustWork = FALSE
+    )
+  )
+
+  configured_root <- make_temp_directory("custom-batch-output-")
+  Sys.setenv(BATCH_JOB_CODES_DIR = configured_root)
+  expect_equal(
+    get_user_output_root(),
+    normalizePath(configured_root, winslash = "/", mustWork = FALSE)
+  )
+})
+
 make_calibration_directory <- function(file_names = character()) {
   directory <- make_temp_directory("cal-plan-input-")
 
@@ -103,6 +131,36 @@ test_that("configured output umask is rendered in the job script", {
   )
 
   expect_true("umask 0007" %in% readLines(job_file))
+})
+
+test_that("Slurm logs are placed in the user-specific output directory", {
+  previous_wd <- setwd(repository_root)
+  on.exit(setwd(previous_wd), add = TRUE)
+  previous_root <- Sys.getenv("BATCH_JOB_CODES_DIR", unset = NA_character_)
+  on.exit({
+    if (is.na(previous_root)) {
+      Sys.unsetenv("BATCH_JOB_CODES_DIR")
+    } else {
+      Sys.setenv(BATCH_JOB_CODES_DIR = previous_root)
+    }
+  }, add = TRUE)
+
+  output_root <- make_temp_directory("user-batch-output-")
+  Sys.setenv(BATCH_JOB_CODES_DIR = output_root)
+  job_file <- create_batch_job(
+    job_name = "calibration",
+    generated_dir = make_temp_directory("cal-plan-output-"),
+    config_file = make_calibration_config(1, 1)
+  )
+
+  script <- readLines(job_file)
+  log_dir <- normalizePath(
+    file.path(output_root, "sbaOut"),
+    winslash = "/",
+    mustWork = TRUE
+  )
+  expect_true(paste0("#SBATCH --output=", log_dir, "/test.out") %in% script)
+  expect_true(paste0("#SBATCH --error=", log_dir, "/test.err") %in% script)
 })
 
 test_that("invalid output umasks are rejected", {

@@ -66,7 +66,11 @@ if (!job_name %in% names(cfg$jobs)) {
 # Directory for programmatically generated files.
 
 
-generated_dir <- create_unique_job_directory(job_name)
+output_root <- ensure_directory(get_user_output_root())
+generated_dir <- create_unique_job_directory(
+  job_name,
+  file.path(output_root, "generated")
+)
 
 
 # CREATE PLAN FILE --------------------------------------------------------

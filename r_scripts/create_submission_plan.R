@@ -1,10 +1,9 @@
 # Create an exclusive output directory for one submission.
-create_unique_job_directory <- function(job_name, parent_dir = "generated") {
-  if (!dir.exists(parent_dir) &&
-      !dir.create(parent_dir, recursive = TRUE, showWarnings = FALSE) &&
-      !dir.exists(parent_dir)) {
-    stop("Unable to create generated directory: ", parent_dir)
-  }
+create_unique_job_directory <- function(
+    job_name,
+    parent_dir = file.path(get_user_output_root(), "generated")
+) {
+  parent_dir <- ensure_directory(parent_dir)
 
   repeat {
     candidate <- tempfile(
